@@ -28,6 +28,12 @@ const getUser = (req, res) => {
 const createUser = (req, res) => {
   const { name, avatar } = req.body;
 
+  if (!name || !avatar) {
+    return res
+      .status(400)
+      .send({ message: "Missing name or avatar in request body" });
+  }
+
   User.create({ name, avatar })
     .then((user) => res.status(201).send(user))
     .catch((err) =>
