@@ -1,11 +1,11 @@
 const ClothingItem = require("../models/clothingItem");
 
 const createItem = (req, res) => {
-  console.log(req);
-  console.log(req.body);
   const { name, weather, imageUrl } = req.body;
+  // Grab the user id from the request object (injected by middleware)
+  const owner = req.user._id;
 
-  ClothingItem.create({ name, weather, imageUrl })
+  ClothingItem.create({ name, weather, imageUrl, owner })
     .then((item) => {
       console.log(item);
       res.send({ data: item });
@@ -25,9 +25,9 @@ const getItems = (req, res) => {
 
 const updateItem = (req, res) => {
   const { itemId } = req.params;
-  const { imageUrl } = req.body; // update this to imageUrl
-  console.log(itemId, imageUrl); // update this to imageUrl
-  ClothingItem.findByIdAndUpdate(itemId, { $set: { imageUrl } }, { new: true }) // update this to imageUrl
+  const { imageUrl } = req.body;
+  console.log(itemId, imageUrl);
+  ClothingItem.findByIdAndUpdate(itemId, { $set: { imageUrl } }, { new: true })
     .orFail()
     .then((item) => res.status(200).send({ data: item }))
     .catch((e) => {
