@@ -1,11 +1,34 @@
 const ClothingItem = require("../models/clothingItem");
+const mongoose = require("mongoose");
+const validator = require("validator");
 
 const createItem = (req, res) => {
+  console.log("createItem called");
   const { name, weather, imageUrl } = req.body;
-  // Grab the user id from the request object (injected by middleware)
+
+  // Validate the name length
+  if (!name || name.length < 2 || name.length > 30) {
+    res
+      .status(400)
+      .send({ message: "Name must be between 2 and 30 characters long." });
+    return;
+  }
+
+  // Check if the "weather" field is present
+  if (!weather) {
+    res.status(400).send({ message: "Weather field is required." });
+    return;
+  }
+
+  // Check if "imageUrl" field is valid URL
+  if (!validator.isURL(imageUrl)) {
+    res.status(400).send({ message: "Invalid URL for imageUrl." });
+    return;
+  }
+
   const owner = req.user._id;
 
-  ClothingItem.create({ name, weather, imageUrl, owner })
+  ClothingItem.create({ name, weather, imageUrl, owner, likes: [] }) // initialize likes as an empty array
     .then((item) => {
       console.log(item);
       res.send({ data: item });
@@ -14,8 +37,50 @@ const createItem = (req, res) => {
       res.status(500).send({ message: "Error from createItem ", e });
     });
 };
+const likeItem = (req, res) => {
+  console.log("likeItem called");
+  const { itemId } = req.params;
+  const { userId } = req.user; // Assuming you have authentication in place
+
+  // check if itemId is a valid MongoDB ID
+  if (!mongoose.Types.ObjectId.isValid(itemId)) {
+    return res.status(400).send({ message: "Invalid ID format." });
+  }
+
+  ClothingItem.findById(itemId)
+    .then((item) => {
+      if (!item) {
+        // If the item doesn't exist, return a 404 status code
+        return res
+          .status(404)
+          .send({ message: `Item not found with id ${itemId}` });
+      }
+
+      if (item.likes.includes(userId)) {
+        return res
+          .status(400)
+          .send({ message: "User has already liked this item" });
+      }
+
+      item.likes.push(userId);
+      return item.save();
+    })
+    .then((updatedItem) => {
+      res.send({
+        message: `Item with id ${itemId} liked successfully`,
+        data: updatedItem,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res
+        .status(500)
+        .send({ message: "An error occurred while trying to like the item" });
+    });
+};
 
 const getItems = (req, res) => {
+  console.log("getItems called");
   ClothingItem.find({})
     .then((items) => res.status(200).send(items))
     .catch((e) => {
@@ -24,9 +89,9 @@ const getItems = (req, res) => {
 };
 
 const updateItem = (req, res) => {
+  console.log("updateItem called");
   const { itemId } = req.params;
   const { imageUrl } = req.body;
-  console.log(itemId, imageUrl);
   ClothingItem.findByIdAndUpdate(itemId, { $set: { imageUrl } }, { new: true })
     .orFail()
     .then((item) => res.status(200).send({ data: item }))
@@ -36,11 +101,23 @@ const updateItem = (req, res) => {
 };
 
 const deleteItem = (req, res) => {
+  console.log("deleteItem called");
   const { itemId } = req.params;
-  console.log(itemId);
+
+  // check if itemId is a valid MongoDB ID
+  if (!mongoose.Types.ObjectId.isValid(itemId)) {
+    return res.status(400).send({ message: "Invalid ID format." });
+  }
+
   ClothingItem.findByIdAndDelete(itemId)
-    .orFail()
-    .then((item) => res.status(204).send({}))
+    .then((item) => {
+      if (!item) {
+        return res.status(404).send({ message: "No item found with this ID." });
+      }
+      res
+        .status(200)
+        .send({ message: "Item successfully deleted.", data: item });
+    })
     .catch((e) => {
       res.status(500).send({ message: "Error from deleteItem failed", e });
     });
@@ -51,4 +128,5 @@ module.exports = {
   getItems,
   updateItem,
   deleteItem,
+  likeItem,
 };

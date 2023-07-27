@@ -12,11 +12,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     validate: {
-      validator: (v) => validator.isURL(v),
+      validator: (v) => {
+        console.log(`URL: ${v}, isValid: ${validator.isURL(v)}`);
+        return validator.isURL(v);
+      },
       message: "Avatar link is not valid",
     },
   },
-  // more fields as needed
+  // don't forget to close the Schema object here
 });
 
 const User = mongoose.model("User", userSchema);

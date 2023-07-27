@@ -35,33 +35,51 @@ const getUser = (req, res) => {
 const createUser = (req, res) => {
   const { name, avatar } = req.body;
 
+  // Check if the name field is not provided
   if (!name) {
     return res.status(400).send({ message: "Name field is required" });
   }
 
+  // Check if the avatar field is not provided
   if (!avatar) {
     return res.status(400).send({ message: "Avatar field is required" });
   }
 
+  // Check if avatar is a valid URL
+  let url;
+
   try {
-    new URL(avatar);
+    url = new URL(avatar);
   } catch (_) {
     return res.status(400).send({ message: "Avatar must be a valid URL" });
   }
 
+  // Additional check for the validity of the URL
+  if (!["http:", "https:"].includes(url.protocol)) {
+    return res.status(400).send({ message: "Avatar must be a valid URL" });
+  }
+
+  // Check if the name field is less than 2 characters or greater than 30 characters
   if (name.length < 2 || name.length > 30) {
     return res
       .status(400)
       .send({ message: "Name must be between 2 and 30 characters" });
   }
 
-  User.create({ name, avatar })
+  const user = new User({ name, avatar });
+
+  user
+    .save()
     .then((user) => res.status(201).send(user))
-    .catch((err) =>
-      res
-        .status(500)
-        .send({ message: "Error occurred while creating user", error: err }),
-    );
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        res.status(400).send({ message: err.message, error: err });
+      } else {
+        res
+          .status(500)
+          .send({ message: "Error occurred while creating user", error: err });
+      }
+    });
 };
 
 module.exports = {
