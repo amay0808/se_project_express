@@ -6,6 +6,7 @@ const {
   updateItem,
   deleteItem,
   likeItem, // newly imported function
+  unlikeItem,
 } = require("../controllers/clothingItems");
 // CRUD
 
@@ -23,5 +24,9 @@ router.delete("/:itemId", deleteItem);
 
 //Like
 router.put("/:itemId/likes", likeItem); // new route for liking an item
+
+//unlike
+
+router.delete("/:itemId/likes", unlikeItem); // new route for unliking an item
 
 module.exports = router;

@@ -6,7 +6,6 @@ const createItem = (req, res) => {
   console.log("createItem called");
   const { name, weather, imageUrl } = req.body;
 
-  // Validate the name length
   if (!name || name.length < 2 || name.length > 30) {
     res
       .status(400)
@@ -14,13 +13,11 @@ const createItem = (req, res) => {
     return;
   }
 
-  // Check if the "weather" field is present
   if (!weather) {
     res.status(400).send({ message: "Weather field is required." });
     return;
   }
 
-  // Check if "imageUrl" field is valid URL
   if (!validator.isURL(imageUrl)) {
     res.status(400).send({ message: "Invalid URL for imageUrl." });
     return;
@@ -28,7 +25,7 @@ const createItem = (req, res) => {
 
   const owner = req.user._id;
 
-  ClothingItem.create({ name, weather, imageUrl, owner, likes: [] }) // initialize likes as an empty array
+  ClothingItem.create({ name, weather, imageUrl, owner, likes: [] })
     .then((item) => {
       console.log(item);
       res.send({ data: item });
@@ -37,35 +34,25 @@ const createItem = (req, res) => {
       res.status(500).send({ message: "Error from createItem ", e });
     });
 };
+
 const likeItem = (req, res) => {
   console.log("likeItem called");
   const { itemId } = req.params;
-  const { userId } = req.user; // Assuming you have authentication in place
+  const { userId } = req.user;
 
-  // check if itemId is a valid MongoDB ID
   if (!mongoose.Types.ObjectId.isValid(itemId)) {
     return res.status(400).send({ message: "Invalid ID format." });
   }
 
-  ClothingItem.findById(itemId)
-    .then((item) => {
-      if (!item) {
-        // If the item doesn't exist, return a 404 status code
-        return res
-          .status(404)
-          .send({ message: `Item not found with id ${itemId}` });
-      }
-
-      if (item.likes.includes(userId)) {
-        return res
-          .status(400)
-          .send({ message: "User has already liked this item" });
-      }
-
-      item.likes.push(userId);
-      return item.save();
-    })
+  ClothingItem.findByIdAndUpdate(
+    itemId,
+    { $addToSet: { likes: userId } },
+    { new: true },
+  )
     .then((updatedItem) => {
+      if (!updatedItem) {
+        return res.status(404).send({ message: "Item not found." });
+      }
       res.send({
         message: `Item with id ${itemId} liked successfully`,
         data: updatedItem,
@@ -76,6 +63,37 @@ const likeItem = (req, res) => {
       res
         .status(500)
         .send({ message: "An error occurred while trying to like the item" });
+    });
+};
+
+const unlikeItem = (req, res) => {
+  console.log("unlikeItem called");
+  const { itemId } = req.params;
+  const { userId } = req.user;
+
+  if (!mongoose.Types.ObjectId.isValid(itemId)) {
+    return res.status(400).send({ message: "Invalid ID format." });
+  }
+
+  ClothingItem.findByIdAndUpdate(
+    itemId,
+    { $pull: { likes: userId } },
+    { new: true },
+  )
+    .then((updatedItem) => {
+      if (!updatedItem) {
+        return res.status(404).send({ message: "Item not found." });
+      }
+      res.send({
+        message: `Item with id ${itemId} unliked successfully`,
+        data: updatedItem,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res
+        .status(500)
+        .send({ message: "An error occurred while trying to unlike the item" });
     });
 };
 
@@ -104,7 +122,6 @@ const deleteItem = (req, res) => {
   console.log("deleteItem called");
   const { itemId } = req.params;
 
-  // check if itemId is a valid MongoDB ID
   if (!mongoose.Types.ObjectId.isValid(itemId)) {
     return res.status(400).send({ message: "Invalid ID format." });
   }
@@ -129,4 +146,5 @@ module.exports = {
   updateItem,
   deleteItem,
   likeItem,
+  unlikeItem, // newly added function
 };
