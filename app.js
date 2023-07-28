@@ -2,6 +2,12 @@ const express = require("express");
 const { PORT = 3001 } = process.env;
 const mongoose = require("mongoose");
 const app = express();
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  INTERNAL_SERVER_ERROR,
+} = require("./utils/errors");
+
 mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db", (r) => {
   console.log("connected to db");
 }),
@@ -10,7 +16,7 @@ const routes = require("./routes");
 app.use(express.json());
 app.use((req, res, next) => {
   req.user = {
-    _id: "5d8b8592978f8bd833ca8133", // paste the _id of the test user created in the previous step
+    _id: "5d8b8592978f8bd833ca8133",
   };
   next();
 });
