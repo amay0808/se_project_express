@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 const User = require("../models/user");
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  INTERNAL_SERVER_ERROR,
+  CREATED,
+} = require("../utils/errors");
 
 const getUsers = (req, res) => {
   User.find({})
@@ -33,29 +39,9 @@ const getUser = (req, res) => {
         .send({ message: "Error occurred while fetching user" });
     });
 };
+
 const createUser = (req, res) => {
   const { name, avatar } = req.body;
-
-  let url;
-  try {
-    url = new URL(avatar);
-  } catch (_) {
-    return res
-      .status(BAD_REQUEST)
-      .send({ message: "Avatar must be a valid URL" });
-  }
-
-  if (!["http:", "https:"].includes(url.protocol)) {
-    return res
-      .status(BAD_REQUEST)
-      .send({ message: "Avatar must be a valid URL" });
-  }
-
-  if (name.length < 2 || name.length > 30) {
-    return res
-      .status(BAD_REQUEST)
-      .send({ message: "Name must be between 2 and 30 characters" });
-  }
 
   const user = new User({ name, avatar });
 

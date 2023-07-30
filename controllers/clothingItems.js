@@ -20,12 +20,11 @@ const createItem = (req, res) => {
       if (err instanceof mongoose.Error.ValidationError) {
         res.status(BAD_REQUEST).send({
           message: "Validation Error: Invalid Data.",
-          error: err.errors,
         });
       } else {
         res
           .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "Error from createItem ", error: err });
+          .send({ message: "Error from createItem" });
       }
     });
 };
@@ -97,9 +96,10 @@ const getItems = (req, res) => {
   ClothingItem.find({})
     .then((items) => res.send(items))
     .catch((e) => {
+      console.log(e);
       res
         .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Error from getItems failed", e });
+        .send({ message: "Error from getItems" });
     });
 };
 
@@ -121,9 +121,10 @@ const deleteItem = (req, res) => {
       res.send({ message: "Item successfully deleted.", data: item });
     })
     .catch((e) => {
+      console.log(e);
       res
         .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Error from deleteItem failed", e });
+        .send({ message: "Error from deleteItem" });
     });
 };
 
