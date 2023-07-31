@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema({
       message: "Avatar link is not valid",
     },
   },
-  // don't forget to close the Schema object here
 });
 
 const User = mongoose.model("User", userSchema);
