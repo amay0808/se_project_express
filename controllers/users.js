@@ -10,34 +10,32 @@ const {
 const getUsers = (req, res) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch((err) => {
-      console.error(err);
+    .catch(() =>
       res
         .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Error occurred while fetching users" });
-    });
+        .json({ message: "Error occurred while fetching users" }),
+    );
 };
 
 const getUser = (req, res) => {
   const { userId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(BAD_REQUEST).send({ message: "Invalid User ID" });
+    return res.status(BAD_REQUEST).json({ message: "Invalid User ID" });
   }
 
   User.findById(userId)
-    .then((user) => {
-      if (!user) {
-        return res.status(NOT_FOUND).send({ message: "User not found" });
+    .then((userResult) => {
+      if (!userResult) {
+        return res.status(NOT_FOUND).json({ message: "User not found" });
       }
-      res.send(user);
+      return res.json(userResult);
     })
-    .catch((err) => {
-      console.error(err);
+    .catch(() =>
       res
         .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Error occurred while fetching user" });
-    });
+        .json({ message: "Error occurred while fetching user" }),
+    );
 };
 
 const createUser = (req, res) => {
@@ -47,16 +45,15 @@ const createUser = (req, res) => {
 
   user
     .save()
-    .then((user) => res.status(CREATED).send(user))
+    .then((userResult) => res.status(CREATED).json(userResult))
     .catch((err) => {
-      console.error(err);
+      // console.error(err);
       if (err.name === "ValidationError") {
-        res.status(BAD_REQUEST).send({ message: "Error in user data" });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "Error occurred while creating user" });
+        return res.status(BAD_REQUEST).json({ message: "Error in user data" });
       }
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .json({ message: "Error occurred while creating user" });
     });
 };
 
