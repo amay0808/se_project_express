@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
+
 const User = require("../models/user");
+
 const {
   BAD_REQUEST,
   NOT_FOUND,
@@ -7,53 +9,54 @@ const {
   CREATED,
 } = require("../utils/errors");
 
-const getUsers = (req, res) => {
+const getUsers = (req, res) =>
   User.find({})
     .then((users) => res.send(users))
-    .catch(() =>
-      res
+    .catch((err) => {
+      console.error(err);
+      return res
         .status(INTERNAL_SERVER_ERROR)
-        .json({ message: "Error occurred while fetching users" }),
-    );
-};
+        .send({ message: "Error occurred while fetching users" });
+    });
 
 const getUser = (req, res) => {
   const { userId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(BAD_REQUEST).json({ message: "Invalid User ID" });
+    return res.status(BAD_REQUEST).send({ message: "Invalid User ID" });
   }
 
-  User.findById(userId)
-    .then((userResult) => {
-      if (!userResult) {
-        return res.status(NOT_FOUND).json({ message: "User not found" });
+  return User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        return res.status(NOT_FOUND).send({ message: "User not found" });
       }
-      return res.json(userResult);
+      return res.send(user);
     })
-    .catch(() =>
-      res
+    .catch((err) => {
+      console.error(err);
+      return res
         .status(INTERNAL_SERVER_ERROR)
-        .json({ message: "Error occurred while fetching user" }),
-    );
+        .send({ message: "Error occurred while fetching user" });
+    });
 };
 
 const createUser = (req, res) => {
   const { name, avatar } = req.body;
 
-  const user = new User({ name, avatar });
+  const newUser = new User({ name, avatar });
 
-  user
+  return newUser
     .save()
-    .then((userResult) => res.status(CREATED).json(userResult))
+    .then((savedUser) => res.status(CREATED).send(savedUser))
     .catch((err) => {
-      // console.error(err);
+      console.error(err);
       if (err.name === "ValidationError") {
-        return res.status(BAD_REQUEST).json({ message: "Error in user data" });
+        return res.status(BAD_REQUEST).send({ message: "Error in user data" });
       }
       return res
         .status(INTERNAL_SERVER_ERROR)
-        .json({ message: "Error occurred while creating user" });
+        .send({ message: "Error occurred while creating user" });
     });
 };
 

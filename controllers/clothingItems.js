@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const ClothingItem = require("../models/clothingItem");
+
 const {
   BAD_REQUEST,
   NOT_FOUND,
@@ -8,29 +9,30 @@ const {
 
 const createItem = (req, res) => {
   console.log("createItem called");
+
   const { name, weather, imageUrl } = req.body;
   const owner = req.user._id;
 
-  ClothingItem.create({ name, weather, imageUrl, owner, likes: [] })
+  return ClothingItem.create({ name, weather, imageUrl, owner, likes: [] })
     .then((item) => {
       console.log(item);
-      res.send({ data: item });
+      return res.send({ data: item });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        res.status(BAD_REQUEST).send({
+        return res.status(BAD_REQUEST).send({
           message: "Validation Error: Invalid Data.",
         });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "Error from createItem" });
       }
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "Error from createItem" });
     });
 };
 
 const likeItem = (req, res) => {
   console.log("likeItem called");
+
   const { itemId } = req.params;
   const { _id } = req.user;
 
@@ -38,23 +40,22 @@ const likeItem = (req, res) => {
     return res.status(BAD_REQUEST).send({ message: "Invalid ID format." });
   }
 
-  ClothingItem.findByIdAndUpdate(
+  return ClothingItem.findByIdAndUpdate(
     itemId,
     { $addToSet: { likes: _id } },
     { new: true },
   )
-    .then((updatedItem) => {
-      if (!updatedItem) {
-        return res.status(NOT_FOUND).send({ message: "Item not found." });
-      }
-      res.send({
-        message: `Item with id ${itemId} liked successfully`,
-        data: updatedItem,
-      });
-    })
+    .then((updatedItem) =>
+      updatedItem
+        ? res.send({
+            message: `Item with id ${itemId} liked successfully`,
+            data: updatedItem,
+          })
+        : res.status(NOT_FOUND).send({ message: "Item not found." }),
+    )
     .catch((err) => {
       console.log(err);
-      res
+      return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An error occurred while trying to like the item" });
     });
@@ -62,6 +63,7 @@ const likeItem = (req, res) => {
 
 const unlikeItem = (req, res) => {
   console.log("unlikeItem called");
+
   const { itemId } = req.params;
   const { _id } = req.user;
 
@@ -69,23 +71,22 @@ const unlikeItem = (req, res) => {
     return res.status(BAD_REQUEST).send({ message: "Invalid ID format." });
   }
 
-  ClothingItem.findByIdAndUpdate(
+  return ClothingItem.findByIdAndUpdate(
     itemId,
     { $pull: { likes: _id } },
     { new: true },
   )
-    .then((updatedItem) => {
-      if (!updatedItem) {
-        return res.status(NOT_FOUND).send({ message: "Item not found." });
-      }
-      res.send({
-        message: `Item with id ${itemId} unliked successfully`,
-        data: updatedItem,
-      });
-    })
+    .then((updatedItem) =>
+      updatedItem
+        ? res.send({
+            message: `Item with id ${itemId} unliked successfully`,
+            data: updatedItem,
+          })
+        : res.status(NOT_FOUND).send({ message: "Item not found." }),
+    )
     .catch((err) => {
       console.log(err);
-      res
+      return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An error occurred while trying to unlike the item" });
     });
@@ -93,11 +94,12 @@ const unlikeItem = (req, res) => {
 
 const getItems = (req, res) => {
   console.log("getItems called");
-  ClothingItem.find({})
+
+  return ClothingItem.find({})
     .then((items) => res.send(items))
     .catch((e) => {
       console.log(e);
-      res
+      return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "Error from getItems" });
     });
@@ -105,24 +107,24 @@ const getItems = (req, res) => {
 
 const deleteItem = (req, res) => {
   console.log("deleteItem called");
+
   const { itemId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(itemId)) {
     return res.status(BAD_REQUEST).send({ message: "Invalid ID format." });
   }
 
-  ClothingItem.findByIdAndDelete(itemId)
-    .then((item) => {
-      if (!item) {
-        return res
-          .status(NOT_FOUND)
-          .send({ message: "No item found with this ID." });
-      }
-      res.send({ message: "Item successfully deleted.", data: item });
-    })
+  return ClothingItem.findByIdAndDelete(itemId)
+    .then((item) =>
+      item
+        ? res.send({ message: "Item successfully deleted.", data: item })
+        : res
+            .status(NOT_FOUND)
+            .send({ message: "No item found with this ID." }),
+    )
     .catch((e) => {
       console.log(e);
-      res
+      return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "Error from deleteItem" });
     });
