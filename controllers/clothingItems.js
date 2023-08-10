@@ -114,14 +114,32 @@ const deleteItem = (req, res) => {
     return res.status(BAD_REQUEST).send({ message: "Invalid ID format." });
   }
 
-  return ClothingItem.findByIdAndDelete(itemId)
-    .then((item) =>
-      item
-        ? res.send({ message: "Item successfully deleted.", data: item })
-        : res
-            .status(NOT_FOUND)
-            .send({ message: "No item found with this ID." }),
-    )
+  return ClothingItem.findById(itemId)
+    .then((item) => {
+      if (!item) {
+        return res
+          .status(NOT_FOUND)
+          .send({ message: "No item found with this ID." });
+      }
+
+      if (item.owner.toString() !== req.user._id.toString()) {
+        return res
+          .status(403)
+          .send({ message: "You are not authorized to delete this item" });
+      }
+
+      return item
+        .remove()
+        .then(() =>
+          res.send({ message: "Item successfully deleted.", data: item }),
+        )
+        .catch((e) => {
+          console.log(e);
+          return res
+            .status(INTERNAL_SERVER_ERROR)
+            .send({ message: "Error from deleteItem" });
+        });
+    })
     .catch((e) => {
       console.log(e);
       return res

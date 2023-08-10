@@ -13,7 +13,7 @@ const {
   UNAUTHORIZED,
 } = require("../utils/errors");
 
-const { JWT_SECRET } = require("../utils/config"); // Assuming you have created the config.js in utils
+const { JWT_SECRET } = require("../utils/config");
 
 // Get all users
 const getUsers = async (req, res) => {
@@ -102,7 +102,7 @@ const signinUser = async (req, res) => {
     if (!isValidPassword) {
       return res
         .status(UNAUTHORIZED)
-        .send({ message: "Invalid email or password" }); // Used UNAUTHORIZED status
+        .send({ message: "Invalid email or password" });
     }
 
     const token = jwt.sign({ _id: existingUser._id }, JWT_SECRET, {
@@ -121,8 +121,7 @@ const signinUser = async (req, res) => {
 // Update user details
 const updateUser = async (req, res) => {
   const { userId } = req.params;
-  const { name, avatar, email } = req.body; // Do not directly update the password without hashing
-
+  const { name, avatar, email } = req.body;
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -144,7 +143,6 @@ const updateUser = async (req, res) => {
 };
 const getCurrentUser = async (req, res) => {
   try {
-    // Here, req.user should already have the _id from the auth middleware
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(NOT_FOUND).send({ message: "User not found" });
@@ -157,6 +155,42 @@ const getCurrentUser = async (req, res) => {
       .send({ message: "Error occurred while fetching current user" });
   }
 };
+const updateCurrentUser = async (req, res) => {
+  const updates = Object.keys(req.body); // get the keys of the fields to be updated
+  const allowedUpdates = ["name", "avatar", "email", "password"]; // define allowed fields
+  const isValidOperation = updates.every((update) =>
+    allowedUpdates.includes(update),
+  );
+
+  if (!isValidOperation) {
+    return res.status(BAD_REQUEST).send({ message: "Invalid updates" });
+  }
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(NOT_FOUND).send({ message: "User not found" });
+    }
+
+    updates.forEach((update) => (user[update] = req.body[update]));
+
+    if (req.body.password) {
+      user.password = await bcrypt.hash(req.body.password, 12);
+    }
+
+    await user.save({ validateBeforeSave: true }); // enable validators
+
+    res.send(user);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(BAD_REQUEST).send({ message: "Error in user data" });
+    }
+    console.error(err);
+    res
+      .status(INTERNAL_SERVER_ERROR)
+      .send({ message: "Error occurred while updating current user" });
+  }
+};
 
 module.exports = {
   getUsers,
@@ -165,4 +199,5 @@ module.exports = {
   signinUser,
   updateUser,
   getCurrentUser,
+  updateCurrentUser,
 };

@@ -6,6 +6,9 @@ const mongoose = require("mongoose");
 
 const app = express();
 
+const cors = require("cors");
+
+app.use(cors());
 mongoose
   .connect("mongodb://127.0.0.1:27017/wtwr_db")
   .then(() => console.log("connected to db"))
@@ -14,12 +17,6 @@ mongoose
 const routes = require("./routes");
 
 app.use(express.json());
-app.use((req, res, next) => {
-  req.user = {
-    _id: "5d8b8592978f8bd833ca8133",
-  };
-  next();
-});
 app.use(routes);
 app.listen(PORT, () => {
   console.log(`App listening at ${PORT}`);
