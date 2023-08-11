@@ -5,6 +5,7 @@ const validator = require("validator");
 
 const User = require("../models/user");
 
+const { JWT_SECRET } = require("../utils/config");
 const {
   BAD_REQUEST,
   NOT_FOUND,
@@ -12,8 +13,6 @@ const {
   CREATED,
   UNAUTHORIZED,
 } = require("../utils/errors");
-
-const { JWT_SECRET } = require("../utils/config");
 
 // Get all users
 const getUsers = async (req, res) => {
@@ -48,11 +47,13 @@ const getUser = async (req, res) => {
       .status(INTERNAL_SERVER_ERROR)
       .send({ message: "Error occurred while fetching user" });
   }
-};
-
-// Create a new user
+}; // Create a new user
 const createUser = async (req, res) => {
   const { name, avatar, email, password } = req.body;
+
+  if (!email) {
+    return res.status(BAD_REQUEST).send({ message: "Email is required" });
+  }
 
   // Validate email format
   if (!validator.isEmail(email)) {
@@ -60,6 +61,12 @@ const createUser = async (req, res) => {
   }
 
   try {
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).send({ message: "Email already in use" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = new User({
       name,
@@ -69,11 +76,16 @@ const createUser = async (req, res) => {
     });
 
     const savedUser = await newUser.save();
+    // Remove password from the response object
+    savedUser.password = undefined;
+
     res.status(CREATED).send(savedUser);
   } catch (err) {
     console.error(err);
+
+    // Moved the error checks before generic error for more specific error handling.
     if (err.code === 11000) {
-      return res.status(BAD_REQUEST).send({ message: "Email already in use" });
+      return res.status(409).send({ message: "Email already in use" });
     }
     if (err.name === "ValidationError") {
       return res.status(BAD_REQUEST).send({ message: "Error in user data" });
@@ -87,11 +99,23 @@ const createUser = async (req, res) => {
 const signinUser = async (req, res) => {
   const { email, password } = req.body;
 
+  console.log("Signing in user with email:", email);
+
+  if (!email) {
+    console.log("Email not provided.");
+    return res.status(UNAUTHORIZED).send({ message: "Email is required" });
+  }
+  if (!password) {
+    console.log("Password not provided.");
+    return res.status(UNAUTHORIZED).send({ message: "Password is required" });
+  }
+
   try {
     const existingUser = await User.findOne({ email });
 
     if (!existingUser) {
-      return res.status(NOT_FOUND).send({ message: "User not found" });
+      console.log("No user found with email:", email);
+      return res.status(401).send({ message: "Email not found" });
     }
 
     const isValidPassword = await bcrypt.compare(
@@ -100,6 +124,7 @@ const signinUser = async (req, res) => {
     );
 
     if (!isValidPassword) {
+      console.log("Invalid password for email:", email);
       return res
         .status(UNAUTHORIZED)
         .send({ message: "Invalid email or password" });
@@ -109,9 +134,11 @@ const signinUser = async (req, res) => {
       expiresIn: "7d",
     });
 
+    console.log("Token generated:", token);
+
     res.send({ token, message: "Signed in successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Error during signin:", err);
     res
       .status(INTERNAL_SERVER_ERROR)
       .send({ message: "Error occurred while signing in" });

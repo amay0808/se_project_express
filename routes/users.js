@@ -4,10 +4,11 @@ const {
   getCurrentUser,
   updateCurrentUser,
 } = require("../controllers/users");
+const auth = require("../middlewares/auth");
 
 // New routes
-router.get("/me", getCurrentUser); // Get the currently logged-in user
-router.patch("/me", updateCurrentUser); // Update the currently logged-in user's profile
+router.get("/me", auth, getCurrentUser);
+router.patch("/me", auth, updateCurrentUser);
 
 // Existing route
 router.get("/:userId", getUser);
