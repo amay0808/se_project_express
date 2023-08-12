@@ -40,16 +40,23 @@ const getUser = async (req, res) => {
     if (!user) {
       return res.status(NOT_FOUND).send({ message: "User not found" });
     }
-    res.send(user);
+    return res.send(user);
   } catch (err) {
     console.error(err);
-    res
+    return res
       .status(INTERNAL_SERVER_ERROR)
       .send({ message: "Error occurred while fetching user" });
   }
 }; // Create a new user
 const createUser = async (req, res) => {
   const { name, avatar, email, password } = req.body;
+
+  // Name validation
+  if (name && (name.length < 2 || name.length > 30)) {
+    return res.status(BAD_REQUEST).send({
+      message: "Name must be between 2 and 30 characters",
+    });
+  }
 
   if (!email) {
     return res.status(BAD_REQUEST).send({ message: "Email is required" });
@@ -62,44 +69,41 @@ const createUser = async (req, res) => {
 
   try {
     // Check if email already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).select("+password");
     if (existingUser) {
       return res.status(409).send({ message: "Email already in use" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = new User({
       name,
       avatar,
       email,
-      password: hashedPassword,
+      password, // Directly use the password from req.body
     });
 
     const savedUser = await newUser.save();
-    // Remove password from the response object
     savedUser.password = undefined;
 
-    res.status(CREATED).send(savedUser);
+    return res.status(CREATED).send(savedUser);
   } catch (err) {
     console.error(err);
 
-    // Moved the error checks before generic error for more specific error handling.
     if (err.code === 11000) {
       return res.status(409).send({ message: "Email already in use" });
     }
     if (err.name === "ValidationError") {
       return res.status(BAD_REQUEST).send({ message: "Error in user data" });
     }
-    res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while creating user" });
+    return res.status(INTERNAL_SERVER_ERROR).send({
+      message: "Unexpected error during user creation",
+    });
   }
 };
 
 const signinUser = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log("Signing in user with email:", email);
+  console.log("Attempting to sign in user with email:", email);
 
   if (!email) {
     console.log("Email not provided.");
@@ -111,17 +115,28 @@ const signinUser = async (req, res) => {
   }
 
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).select("+password");
+    console.log("User retrieved from the database:", existingUser);
 
     if (!existingUser) {
       console.log("No user found with email:", email);
       return res.status(401).send({ message: "Email not found" });
     }
 
+    if (!existingUser.password) {
+      console.log("Password is missing in the database for email:", email);
+      return res
+        .status(401)
+        .send({ message: "Password is missing in the database" });
+    }
+    console.log("Input password:", password);
+    console.log("Stored hashed password:", existingUser.password);
+
     const isValidPassword = await bcrypt.compare(
       password,
       existingUser.password,
     );
+    console.log("Is password valid?", isValidPassword);
 
     if (!isValidPassword) {
       console.log("Invalid password for email:", email);
@@ -134,17 +149,14 @@ const signinUser = async (req, res) => {
       expiresIn: "7d",
     });
 
-    console.log("Token generated:", token);
-
-    res.send({ token, message: "Signed in successfully" });
+    return res.send({ token, message: "Signed in successfully" });
   } catch (err) {
     console.error("Error during signin:", err);
-    res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while signing in" });
+    return res.status(INTERNAL_SERVER_ERROR).send({
+      message: "Unexpected error during user sign in",
+    });
   }
 };
-
 // Update user details
 const updateUser = async (req, res) => {
   const { userId } = req.params;
@@ -160,10 +172,10 @@ const updateUser = async (req, res) => {
     user.email = email || user.email;
 
     const updatedUser = await user.save();
-    res.send(updatedUser);
+    return res.send(updatedUser);
   } catch (err) {
     console.error(err);
-    res
+    return res
       .status(INTERNAL_SERVER_ERROR)
       .send({ message: "Error occurred while updating user" });
   }
@@ -174,17 +186,17 @@ const getCurrentUser = async (req, res) => {
     if (!user) {
       return res.status(NOT_FOUND).send({ message: "User not found" });
     }
-    res.send(user);
+    return res.send(user);
   } catch (err) {
     console.error(err);
-    res
+    return res
       .status(INTERNAL_SERVER_ERROR)
       .send({ message: "Error occurred while fetching current user" });
   }
 };
 const updateCurrentUser = async (req, res) => {
-  const updates = Object.keys(req.body); // get the keys of the fields to be updated
-  const allowedUpdates = ["name", "avatar", "email", "password"]; // define allowed fields
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ["name", "avatar", "email", "password"];
   const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update),
   );
@@ -199,23 +211,34 @@ const updateCurrentUser = async (req, res) => {
       return res.status(NOT_FOUND).send({ message: "User not found" });
     }
 
-    updates.forEach((update) => (user[update] = req.body[update]));
+    updates.forEach((update) => {
+      user[update] = req.body[update];
+    });
 
-    if (req.body.password) {
-      user.password = await bcrypt.hash(req.body.password, 12);
+    // Name validation
+    if (user.name && (user.name.length < 2 || user.name.length > 30)) {
+      return res.status(BAD_REQUEST).send({
+        message: "Name must be between 2 and 30 characters",
+      });
     }
 
-    await user.save({ validateBeforeSave: true }); // enable validators
+    // Avatar URL validation
+    if (user.avatar && !validator.isURL(user.avatar)) {
+      return res.status(BAD_REQUEST).send({
+        message: "Invalid avatar URL",
+      });
+    }
 
-    res.send(user);
+    await user.save({ validateBeforeSave: true });
+    return res.send(user);
   } catch (err) {
     if (err.name === "ValidationError") {
       return res.status(BAD_REQUEST).send({ message: "Error in user data" });
     }
     console.error(err);
-    res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while updating current user" });
+    return res.status(INTERNAL_SERVER_ERROR).send({
+      message: "Unexpected error during current user update",
+    });
   }
 };
 
