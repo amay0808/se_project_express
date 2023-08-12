@@ -1,4 +1,4 @@
-const JWT_SECRET = "not-secret  "; // Change this to a robust secret
+const JWT_SECRET = "not-secret";
 
 module.exports = {
   JWT_SECRET,
