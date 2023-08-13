@@ -3,6 +3,8 @@ const { JWT_SECRET } = require("../utils/config");
 const { UNAUTHORIZED } = require("../utils/errors");
 
 module.exports = (req, res, next) => {
+  console.log("Auth middleware is running");
+
   const { authorization } = req.headers;
 
   if (!authorization) {

@@ -9,11 +9,9 @@ const auth = require("../middlewares/auth");
 router.post("/signin", signinUser);
 router.post("/signup", createUser);
 
-// Middleware for protected routes
-router.use(auth);
-
-router.use("/items", clothingItemRoutes);
-router.use("/users", userRoutes);
+// Protected routes (add the auth middleware directly to these routes)
+router.use("/items", auth, clothingItemRoutes);
+router.use("/users", auth, userRoutes);
 
 // This handles all other undefined routes
 router.use((req, res) => {

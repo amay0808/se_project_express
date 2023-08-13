@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
@@ -35,6 +34,13 @@ const createUser = async (req, res) => {
     return res.status(BAD_REQUEST).send({ message: "Invalid avatar URL" });
   }
 
+  // Check if the email already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    console.log("User with given email already exists");
+    return res.status(CONFLICT).send({ message: "Email already in use" });
+  }
+
   try {
     const newUser = new User({
       name,
@@ -51,24 +57,6 @@ const createUser = async (req, res) => {
     return res.status(CREATED).send(savedUser);
   } catch (err) {
     console.error("Error occurred during user creation:", err);
-
-    if (err.code === 11000) {
-      console.log(
-        "Detected duplicate key error (code 11000). Sending conflict response.",
-      );
-      return res.status(CONFLICT).send({ message: "Email already in use" });
-    }
-
-    if (err.name === "ValidationError") {
-      console.log(
-        "Validation error during user creation. Sending bad request response.",
-      );
-      return res.status(BAD_REQUEST).send({ message: "Error in user data" });
-    }
-
-    console.log(
-      "Unexpected error during user creation. Sending internal server error response.",
-    );
     return res.status(INTERNAL_SERVER_ERROR).send({
       message: "Unexpected error during user creation",
     });

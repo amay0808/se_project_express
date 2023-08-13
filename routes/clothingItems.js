@@ -8,19 +8,18 @@ const {
   unlikeItem,
 } = require("../controllers/clothingItems");
 
-// Create
+// Create an item
 router.post("/", auth, createItem);
 
-// Read - Making this route public as per the reviewer's comment
+// Get all items
 router.get("/", getItems);
-
-// Delete
+// Delete an item
 router.delete("/:itemId", auth, deleteItem);
 
-// Like
+// Like an item
 router.put("/:itemId/likes", auth, likeItem);
 
-// Unlike
+// Unlike an item
 router.delete("/:itemId/likes", auth, unlikeItem);
 
 module.exports = router;

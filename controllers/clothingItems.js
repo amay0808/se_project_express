@@ -5,10 +5,11 @@ const {
   BAD_REQUEST,
   NOT_FOUND,
   INTERNAL_SERVER_ERROR,
+  FORBIDDEN,
 } = require("../utils/errors");
 
 const createItem = (req, res) => {
-  console.log("createItem called");
+  console.log("Received data:", req.body);
 
   const { name, weather, imageUrl } = req.body;
   const owner = req.user._id;
@@ -106,48 +107,46 @@ const getItems = (req, res) => {
 };
 
 const deleteItem = (req, res) => {
-  console.log("deleteItem called");
+  const itemId = req.params.itemId;
 
-  const { itemId } = req.params;
-
+  // Validate if itemId is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(BAD_REQUEST).send({ message: "Invalid ID format." });
+    return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
   }
 
-  return ClothingItem.findById(itemId)
+  ClothingItem.findById(itemId)
     .then((item) => {
       if (!item) {
+        console.log(`Item with ID ${itemId} not found.`);
         return res
           .status(NOT_FOUND)
           .send({ message: "No item found with this ID." });
       }
 
       if (item.owner.toString() !== req.user._id.toString()) {
+        console.log(
+          `User ${req.user._id} attempted to delete item they don't own with ID ${itemId}.`,
+        );
         return res
           .status(FORBIDDEN)
           .send({ message: "You are not authorized to delete this item" });
       }
 
-      return item
-        .remove()
-        .then(() =>
-          res.send({ message: "Item successfully deleted.", data: item }),
-        )
-        .catch((e) => {
-          console.log(e);
-          return res
-            .status(INTERNAL_SERVER_ERROR)
-            .send({ message: "Error from deleteItem" });
-        });
+      return item.remove();
     })
-    .catch((e) => {
-      console.log(e);
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "Error from deleteItem" });
+    .then((deletedItem) => {
+      if (deletedItem) {
+        return res.send({
+          message: "Item successfully deleted.",
+          itemId: itemId,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log("Error from deleteItem:", err);
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
     });
 };
-
 module.exports = {
   createItem,
   getItems,
