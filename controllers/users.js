@@ -12,88 +12,63 @@ const {
   INTERNAL_SERVER_ERROR,
   CREATED,
   UNAUTHORIZED,
+  CONFLICT,
 } = require("../utils/errors");
 
-// Get all users
-const getUsers = async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.send(users);
-  } catch (err) {
-    console.error(err);
-    res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while fetching users" });
-  }
-};
-
-// Get specific user by ID
-const getUser = async (req, res) => {
-  const { userId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(BAD_REQUEST).send({ message: "Invalid User ID" });
-  }
-
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(NOT_FOUND).send({ message: "User not found" });
-    }
-    return res.send(user);
-  } catch (err) {
-    console.error(err);
-    return res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while fetching user" });
-  }
-}; // Create a new user
 const createUser = async (req, res) => {
+  console.log("createUser function called with request body:", req.body);
+
   const { name, avatar, email, password } = req.body;
 
-  // Name validation
-  if (name && (name.length < 2 || name.length > 30)) {
-    return res.status(BAD_REQUEST).send({
-      message: "Name must be between 2 and 30 characters",
-    });
+  if (!name || name.length < 2 || name.length > 30) {
+    console.log("Failed at name validation");
+    return res.status(BAD_REQUEST).send({ message: "Invalid name length" });
   }
 
-  if (!email) {
-    return res.status(BAD_REQUEST).send({ message: "Email is required" });
-  }
-
-  // Validate email format
-  if (!validator.isEmail(email)) {
+  if (!email || !validator.isEmail(email)) {
+    console.log("Failed at email validation");
     return res.status(BAD_REQUEST).send({ message: "Invalid email format" });
   }
 
-  try {
-    // Check if email already exists
-    const existingUser = await User.findOne({ email }).select("+password");
-    if (existingUser) {
-      return res.status(409).send({ message: "Email already in use" });
-    }
+  if (avatar && !validator.isURL(avatar)) {
+    console.log("Failed at avatar URL validation");
+    return res.status(BAD_REQUEST).send({ message: "Invalid avatar URL" });
+  }
 
+  try {
     const newUser = new User({
       name,
       avatar,
       email,
-      password, // Directly use the password from req.body
+      password,
     });
 
+    console.log("Attempting to save user to database...");
     const savedUser = await newUser.save();
+    console.log("User saved successfully, removing password from response...");
     savedUser.password = undefined;
 
     return res.status(CREATED).send(savedUser);
   } catch (err) {
-    console.error(err);
+    console.error("Error occurred during user creation:", err);
 
     if (err.code === 11000) {
-      return res.status(409).send({ message: "Email already in use" });
+      console.log(
+        "Detected duplicate key error (code 11000). Sending conflict response.",
+      );
+      return res.status(CONFLICT).send({ message: "Email already in use" });
     }
+
     if (err.name === "ValidationError") {
+      console.log(
+        "Validation error during user creation. Sending bad request response.",
+      );
       return res.status(BAD_REQUEST).send({ message: "Error in user data" });
     }
+
+    console.log(
+      "Unexpected error during user creation. Sending internal server error response.",
+    );
     return res.status(INTERNAL_SERVER_ERROR).send({
       message: "Unexpected error during user creation",
     });
@@ -103,43 +78,27 @@ const createUser = async (req, res) => {
 const signinUser = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log("Attempting to sign in user with email:", email);
-
-  if (!email) {
-    console.log("Email not provided.");
-    return res.status(UNAUTHORIZED).send({ message: "Email is required" });
-  }
-  if (!password) {
-    console.log("Password not provided.");
-    return res.status(UNAUTHORIZED).send({ message: "Password is required" });
+  if (!email || !password) {
+    return res
+      .status(UNAUTHORIZED)
+      .send({ message: "Email and password are required" });
   }
 
   try {
     const existingUser = await User.findOne({ email }).select("+password");
-    console.log("User retrieved from the database:", existingUser);
 
     if (!existingUser) {
-      console.log("No user found with email:", email);
-      return res.status(401).send({ message: "Email not found" });
-    }
-
-    if (!existingUser.password) {
-      console.log("Password is missing in the database for email:", email);
       return res
-        .status(401)
-        .send({ message: "Password is missing in the database" });
+        .status(UNAUTHORIZED)
+        .send({ message: "Invalid email or password" });
     }
-    console.log("Input password:", password);
-    console.log("Stored hashed password:", existingUser.password);
 
     const isValidPassword = await bcrypt.compare(
       password,
       existingUser.password,
     );
-    console.log("Is password valid?", isValidPassword);
 
     if (!isValidPassword) {
-      console.log("Invalid password for email:", email);
       return res
         .status(UNAUTHORIZED)
         .send({ message: "Invalid email or password" });
@@ -157,29 +116,7 @@ const signinUser = async (req, res) => {
     });
   }
 };
-// Update user details
-const updateUser = async (req, res) => {
-  const { userId } = req.params;
-  const { name, avatar, email } = req.body;
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(NOT_FOUND).send({ message: "User not found" });
-    }
 
-    user.name = name || user.name;
-    user.avatar = avatar || user.avatar;
-    user.email = email || user.email;
-
-    const updatedUser = await user.save();
-    return res.send(updatedUser);
-  } catch (err) {
-    console.error(err);
-    return res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while updating user" });
-  }
-};
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -194,9 +131,11 @@ const getCurrentUser = async (req, res) => {
       .send({ message: "Error occurred while fetching current user" });
   }
 };
+
 const updateCurrentUser = async (req, res) => {
   const updates = Object.keys(req.body);
-  const allowedUpdates = ["name", "avatar", "email", "password"];
+  const allowedUpdates = ["name", "avatar"];
+
   const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update),
   );
@@ -215,18 +154,9 @@ const updateCurrentUser = async (req, res) => {
       user[update] = req.body[update];
     });
 
-    // Name validation
-    if (user.name && (user.name.length < 2 || user.name.length > 30)) {
-      return res.status(BAD_REQUEST).send({
-        message: "Name must be between 2 and 30 characters",
-      });
-    }
-
     // Avatar URL validation
     if (user.avatar && !validator.isURL(user.avatar)) {
-      return res.status(BAD_REQUEST).send({
-        message: "Invalid avatar URL",
-      });
+      return res.status(BAD_REQUEST).send({ message: "Invalid avatar URL" });
     }
 
     await user.save({ validateBeforeSave: true });
@@ -243,11 +173,8 @@ const updateCurrentUser = async (req, res) => {
 };
 
 module.exports = {
-  getUsers,
-  getUser,
   createUser,
   signinUser,
-  updateUser,
   getCurrentUser,
   updateCurrentUser,
 };

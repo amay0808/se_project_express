@@ -124,7 +124,7 @@ const deleteItem = (req, res) => {
 
       if (item.owner.toString() !== req.user._id.toString()) {
         return res
-          .status(403)
+          .status(FORBIDDEN)
           .send({ message: "You are not authorized to delete this item" });
       }
 
