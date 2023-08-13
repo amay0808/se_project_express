@@ -1,9 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const validator = require("validator");
 
 const User = require("../models/user");
-
 const { JWT_SECRET } = require("../utils/config");
 const {
   BAD_REQUEST,
@@ -19,19 +17,10 @@ const createUser = async (req, res) => {
 
   const { name, avatar, email, password } = req.body;
 
-  if (!name || name.length < 2 || name.length > 30) {
-    console.log("Failed at name validation");
-    return res.status(BAD_REQUEST).send({ message: "Invalid name length" });
-  }
-
-  if (!email || !validator.isEmail(email)) {
-    console.log("Failed at email validation");
-    return res.status(BAD_REQUEST).send({ message: "Invalid email format" });
-  }
-
-  if (avatar && !validator.isURL(avatar)) {
-    console.log("Failed at avatar URL validation");
-    return res.status(BAD_REQUEST).send({ message: "Invalid avatar URL" });
+  if (!name || !email || !password) {
+    return res
+      .status(BAD_REQUEST)
+      .send({ message: "Name, email, and password are required." });
   }
 
   // Check if the email already exists
@@ -52,11 +41,18 @@ const createUser = async (req, res) => {
     console.log("Attempting to save user to database...");
     const savedUser = await newUser.save();
     console.log("User saved successfully, removing password from response...");
-    savedUser.password = undefined;
 
-    return res.status(CREATED).send(savedUser);
+    const userResponse = savedUser.toObject();
+    delete userResponse.password;
+
+    return res.status(CREATED).send(userResponse);
   } catch (err) {
     console.error("Error occurred during user creation:", err);
+
+    if (err.name === "ValidationError") {
+      return res.status(BAD_REQUEST).send({ message: err.message });
+    }
+
     return res.status(INTERNAL_SERVER_ERROR).send({
       message: "Unexpected error during user creation",
     });
@@ -133,25 +129,19 @@ const updateCurrentUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
     if (!user) {
       return res.status(NOT_FOUND).send({ message: "User not found" });
     }
 
-    updates.forEach((update) => {
-      user[update] = req.body[update];
-    });
-
-    // Avatar URL validation
-    if (user.avatar && !validator.isURL(user.avatar)) {
-      return res.status(BAD_REQUEST).send({ message: "Invalid avatar URL" });
-    }
-
-    await user.save({ validateBeforeSave: true });
     return res.send(user);
   } catch (err) {
     if (err.name === "ValidationError") {
-      return res.status(BAD_REQUEST).send({ message: "Error in user data" });
+      return res.status(BAD_REQUEST).send({ message: err.message });
     }
     console.error(err);
     return res.status(INTERNAL_SERVER_ERROR).send({

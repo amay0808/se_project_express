@@ -108,7 +108,8 @@ const getItems = (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    const itemId = req.params.itemId;
+    const { itemId } = req.params;
+
     console.log("deleteItem called with itemId:", itemId);
 
     if (!mongoose.Types.ObjectId.isValid(itemId)) {
@@ -141,19 +142,11 @@ const deleteItem = async (req, res) => {
 
     return res.send({
       message: "Item successfully deleted.",
-      itemId: itemId,
+      itemId,
     });
   } catch (err) {
     console.log("Error from deleteItem:", err);
-    let statusCode = INTERNAL_SERVER_ERROR;
-    if (err.message === "Invalid item ID.") {
-      statusCode = BAD_REQUEST;
-    } else if (err.message === "No item found with this ID.") {
-      statusCode = NOT_FOUND;
-    } else if (err.message === "You are not authorized to delete this item") {
-      statusCode = FORBIDDEN;
-    }
-    return res.status(statusCode).send({ message: err.message });
+    return res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
   }
 };
 
