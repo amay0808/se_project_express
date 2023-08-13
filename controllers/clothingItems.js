@@ -106,47 +106,57 @@ const getItems = (req, res) => {
     });
 };
 
-const deleteItem = (req, res) => {
-  const itemId = req.params.itemId;
+const deleteItem = async (req, res) => {
+  try {
+    const itemId = req.params.itemId;
+    console.log("deleteItem called with itemId:", itemId);
 
-  // Validate if itemId is a valid ObjectId
-  if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
-  }
+    if (!mongoose.Types.ObjectId.isValid(itemId)) {
+      return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
+    }
 
-  ClothingItem.findById(itemId)
-    .then((item) => {
-      if (!item) {
-        console.log(`Item with ID ${itemId} not found.`);
-        return res
-          .status(NOT_FOUND)
-          .send({ message: "No item found with this ID." });
-      }
+    const item = await ClothingItem.findById(itemId);
 
-      if (item.owner.toString() !== req.user._id.toString()) {
-        console.log(
-          `User ${req.user._id} attempted to delete item they don't own with ID ${itemId}.`,
-        );
-        return res
-          .status(FORBIDDEN)
-          .send({ message: "You are not authorized to delete this item" });
-      }
+    if (!item) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: "No item found with this ID." });
+    }
 
-      return item.remove();
-    })
-    .then((deletedItem) => {
-      if (deletedItem) {
-        return res.send({
-          message: "Item successfully deleted.",
-          itemId: itemId,
-        });
-      }
-    })
-    .catch((err) => {
-      console.log("Error from deleteItem:", err);
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
+    console.log("Item owner:", item.owner.toString());
+    console.log("Request user ID:", req.user._id.toString());
+
+    if (item.owner.toString() !== req.user._id.toString()) {
+      console.log("Unauthorized deletion attempt.");
+      return res
+        .status(FORBIDDEN)
+        .send({ message: "You are not authorized to delete this item" });
+    }
+
+    const deletedItem = await item.remove();
+
+    if (!deletedItem) {
+      throw new Error("Item was not deleted successfully.");
+    }
+
+    return res.send({
+      message: "Item successfully deleted.",
+      itemId: itemId,
     });
+  } catch (err) {
+    console.log("Error from deleteItem:", err);
+    let statusCode = INTERNAL_SERVER_ERROR;
+    if (err.message === "Invalid item ID.") {
+      statusCode = BAD_REQUEST;
+    } else if (err.message === "No item found with this ID.") {
+      statusCode = NOT_FOUND;
+    } else if (err.message === "You are not authorized to delete this item") {
+      statusCode = FORBIDDEN;
+    }
+    return res.status(statusCode).send({ message: err.message });
+  }
 };
+
 module.exports = {
   createItem,
   getItems,
