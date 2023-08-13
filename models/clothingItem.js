@@ -12,6 +12,10 @@ const clothingItem = new mongoose.Schema({
   weather: {
     type: String,
     required: true,
+    enum: {
+      values: ["hot", "warm", "cold"],
+      message: "Weather type is not valid.",
+    },
   },
   imageUrl: {
     type: String,
@@ -37,4 +41,5 @@ const clothingItem = new mongoose.Schema({
     default: Date.now,
   },
 });
+
 module.exports = mongoose.model("clothingItems", clothingItem);

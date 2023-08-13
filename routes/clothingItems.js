@@ -11,8 +11,8 @@ const {
 // Create
 router.post("/", auth, createItem);
 
-// Read
-router.get("/", auth, getItems);
+// Read - Making this route public as per the reviewer's comment
+router.get("/", getItems);
 
 // Delete
 router.delete("/:itemId", auth, deleteItem);
