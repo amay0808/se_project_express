@@ -1,16 +1,15 @@
 const router = require("express").Router();
 const userRoutes = require("./users");
 const clothingItemRoutes = require("./clothingItems");
-const { signinUser, createUser } = require("../controllers/users");
+const unauthorizedRoutes = require("./unauthorized"); // Import the new unauthorizedRoutes
 const { NOT_FOUND } = require("../utils/errors");
-// const auth = require("../middlewares/auth");
 
-// Public routes
-router.post("/signin", signinUser);
-router.post("/signup", createUser);
+// Apply the new unauthorized routes under /auth
+router.use("/auth", unauthorizedRoutes);
 
+// Protected routes
+// ... (you might add middleware for authentication here)
 router.use("/users", userRoutes);
-
 router.use("/items", clothingItemRoutes);
 
 // This handles all other undefined routes

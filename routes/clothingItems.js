@@ -13,6 +13,7 @@ router.post("/", auth, createItem);
 
 // Get all items
 router.get("/", getItems);
+
 // Delete an item
 router.delete("/:itemId", auth, deleteItem);
 
