@@ -14,7 +14,7 @@ const {
 
 const createUser = async (req, res) => {
   console.log("createUser function called with request body:", req.body);
-
+  console.log("Reached register endpoint");
   const { name, avatar, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -45,7 +45,13 @@ const createUser = async (req, res) => {
     const userResponse = savedUser.toObject();
     delete userResponse.password;
 
-    return res.status(CREATED).send(userResponse);
+    // Generate JWT token
+    const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Send back user data and token
+    return res.status(CREATED).send({ user: userResponse, token });
   } catch (err) {
     console.error("Error occurred during user creation:", err);
 
