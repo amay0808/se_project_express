@@ -9,14 +9,14 @@ const {
 } = require("../utils/errors");
 
 const createItem = (req, res) => {
-  console.log("Received data:", req.body);
+  // console.log("Received data:", req.body);
 
   const { name, weather, imageUrl } = req.body;
   const owner = req.user._id;
 
   return ClothingItem.create({ name, weather, imageUrl, owner, likes: [] })
     .then((item) => {
-      console.log(item);
+      // console.log(item);
       return res.send({ data: item });
     })
     .catch((err) => {
@@ -32,7 +32,7 @@ const createItem = (req, res) => {
 };
 
 const likeItem = (req, res) => {
-  console.log("likeItem called");
+  // console.log("likeItem called");
 
   const { itemId } = req.params;
   const { _id } = req.user;
@@ -55,7 +55,7 @@ const likeItem = (req, res) => {
         : res.status(NOT_FOUND).send({ message: "Item not found." }),
     )
     .catch((err) => {
-      console.log(err);
+      // console.log(err);
       return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An error occurred while trying to like the item" });
@@ -63,7 +63,7 @@ const likeItem = (req, res) => {
 };
 
 const unlikeItem = (req, res) => {
-  console.log("unlikeItem called");
+  // console.log("unlikeItem called");
 
   const { itemId } = req.params;
   const { _id } = req.user;
@@ -86,7 +86,7 @@ const unlikeItem = (req, res) => {
         : res.status(NOT_FOUND).send({ message: "Item not found." }),
     )
     .catch((err) => {
-      console.log(err);
+      // console.log(err);
       return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An error occurred while trying to unlike the item" });
@@ -94,12 +94,12 @@ const unlikeItem = (req, res) => {
 };
 
 const getItems = (req, res) => {
-  console.log("getItems called");
+  // console.log("getItems called");
 
   return ClothingItem.find({})
     .then((items) => res.send(items))
     .catch((e) => {
-      console.log(e);
+      // console.log(e);
       return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "Error from getItems" });
@@ -110,7 +110,7 @@ const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    console.log("deleteItem called with itemId:", itemId);
+    // console.log("deleteItem called with itemId:", itemId);
 
     if (!mongoose.Types.ObjectId.isValid(itemId)) {
       return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
@@ -124,11 +124,11 @@ const deleteItem = async (req, res) => {
         .send({ message: "No item found with this ID." });
     }
 
-    console.log("Item owner:", item.owner.toString());
-    console.log("Request user ID:", req.user._id.toString());
+    // console.log("Item owner:", item.owner.toString());
+    // console.log("Request user ID:", req.user._id.toString());
 
     if (item.owner.toString() !== req.user._id.toString()) {
-      console.log("Unauthorized deletion attempt.");
+      // console.log("Unauthorized deletion attempt.");
       return res
         .status(FORBIDDEN)
         .send({ message: "You are not authorized to delete this item" });
@@ -145,7 +145,7 @@ const deleteItem = async (req, res) => {
       itemId,
     });
   } catch (err) {
-    console.log("Error from deleteItem:", err);
+    // console.log("Error from deleteItem:", err);
     return res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
   }
 };

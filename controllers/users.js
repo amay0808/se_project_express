@@ -31,11 +31,12 @@ const createUser = async (req, res) => {
   }
 
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
       avatar,
       email,
-      password,
+      password: hashedPassword,
     });
 
     console.log("Attempting to save user to database...");
