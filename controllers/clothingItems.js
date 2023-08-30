@@ -9,7 +9,7 @@ const {
 } = require("../utils/errors");
 
 const createItem = (req, res) => {
-  // console.log("Received data:", req.body);
+  console.log("Creating an item with data:", req.body);
 
   const { name, weather, imageUrl } = req.body;
   const owner = req.user._id;
@@ -94,7 +94,7 @@ const unlikeItem = (req, res) => {
 };
 
 const getItems = (req, res) => {
-  // console.log("getItems called");
+  console.log("Fetching all items");
 
   return ClothingItem.find({})
     .then((items) => res.send(items))
