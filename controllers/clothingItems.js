@@ -97,15 +97,20 @@ const getItems = (req, res) => {
   console.log("Fetching all items");
 
   return ClothingItem.find({})
-    .then((items) => res.send(items))
+    .then((items) => {
+      if (items && items.length > 0) {
+        return res.send(items);
+      } else {
+        return res.status(NOT_FOUND).send({ message: "No items found." }); // Add a message when no items are found
+      }
+    })
     .catch((e) => {
-      // console.log(e);
+      console.error("Error fetching items:", e); // Log the actual error
       return res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "Error from getItems" });
     });
 };
-
 const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
