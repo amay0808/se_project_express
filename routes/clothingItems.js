@@ -1,13 +1,16 @@
 const router = require("express").Router();
 const auth = require("../middlewares/auth");
+
 const {
   createItem,
   getItems,
   deleteItem,
   likeItem,
   unlikeItem,
+  getItemById,
 } = require("../controllers/clothingItems");
 
+router.get("/:id", getItemById);
 // Create an item
 router.post("/", auth, createItem);
 

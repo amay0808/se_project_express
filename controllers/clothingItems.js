@@ -111,6 +111,23 @@ const getItems = (req, res) => {
         .send({ message: "Error from getItems" });
     });
 };
+const getItemById = async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const item = await ClothingItem.findById(itemId).populate("owner", "name");
+    console.log("Populated Item:", item);
+    if (!item) {
+      return res.status(NOT_FOUND).send({ message: "Item not found" });
+    }
+
+    return res.status(200).send(item);
+  } catch (error) {
+    return res
+      .status(INTERNAL_SERVER_ERROR)
+      .send({ message: "An error occurred", error });
+  }
+};
+
 const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -161,4 +178,5 @@ module.exports = {
   deleteItem,
   likeItem,
   unlikeItem,
+  getItemById,
 };
