@@ -6,28 +6,34 @@ const cors = require("cors");
 const routes = require("./routes");
 
 const app = express();
+
 app.use((req, res, next) => {
   console.log("Incoming request:", req.method, req.url);
   next();
 });
 
 // Middleware
+console.log("Applying CORS middleware...");
 app.use(cors());
+
+console.log("Applying JSON middleware...");
 app.use(express.json());
 
 // Database
+console.log("Connecting to database...");
 mongoose
   .connect("mongodb://127.0.0.1:27017/wtwr_db")
-  .then(() => console.log("connected to db"))
+  .then(() => console.log("Connected to DB"))
   .catch((e) => console.log("DB error", e));
 
 // Routes
+console.log("Applying routes...");
 app.use(routes);
 
 // Server
 app.listen(PORT, () => {
   console.log(`App listening at ${PORT}`);
-  console.log("This is working");
+  console.log("Server setup complete");
 });
 
 module.exports = app;

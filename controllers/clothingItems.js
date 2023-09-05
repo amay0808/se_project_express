@@ -94,14 +94,19 @@ const unlikeItem = (req, res) => {
 };
 
 const getItems = (req, res) => {
-  console.log("Fetching all items");
+  console.log("Fetching all items...");
 
   return ClothingItem.find({})
     .then((items) => {
+      console.log("Query to database completed."); // Log when query is done
+      console.log("Total number of items found:", items.length); // Log the number of items found
+
       if (items && items.length > 0) {
+        console.log("Sending items to client."); // Log that you're sending items
         return res.send(items);
       } else {
-        return res.status(NOT_FOUND).send({ message: "No items found." }); // Add a message when no items are found
+        console.log("No items found, sending 404."); // Log when no items are found
+        return res.status(NOT_FOUND).send({ message: "No items found." });
       }
     })
     .catch((e) => {
@@ -111,6 +116,7 @@ const getItems = (req, res) => {
         .send({ message: "Error from getItems" });
     });
 };
+
 const getItemById = async (req, res) => {
   try {
     const itemId = req.params.id;
@@ -132,25 +138,44 @@ const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    // console.log("deleteItem called with itemId:", itemId);
+    console.log("Deleting item with ID:", itemId); // Log the itemId you are trying to delete
 
     if (!mongoose.Types.ObjectId.isValid(itemId)) {
+      console.log("Invalid item ID format.");
       return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
     }
 
     const item = await ClothingItem.findById(itemId);
 
     if (!item) {
+      console.log("No item found with this ID.");
       return res
         .status(NOT_FOUND)
         .send({ message: "No item found with this ID." });
     }
 
-    // console.log("Item owner:", item.owner.toString());
-    // console.log("Request user ID:", req.user._id.toString());
+    if (item.owner && req.user && req.user._id) {
+      console.log(
+        `Item owner: ${item.owner.toString()}, Request user ID: ${req.user._id.toString()}`,
+      );
 
-    if (item.owner.toString() !== req.user._id.toString()) {
-      // console.log("Unauthorized deletion attempt.");
+      if (item.owner.toString() !== req.user._id.toString()) {
+        console.log("Unauthorized deletion attempt.");
+        return res
+          .status(FORBIDDEN)
+          .send({ message: "You are not authorized to delete this item" });
+      }
+    } else {
+      console.log("Either item.owner or req.user._id is undefined");
+      console.log(
+        "Item owner:",
+        item ? item.owner : "Item or item owner is undefined",
+      );
+      console.log("Request user:", req.user);
+      console.log(
+        "Request user ID:",
+        req.user ? req.user._id : "User ID is undefined",
+      );
       return res
         .status(FORBIDDEN)
         .send({ message: "You are not authorized to delete this item" });
@@ -159,15 +184,17 @@ const deleteItem = async (req, res) => {
     const deletedItem = await item.remove();
 
     if (!deletedItem) {
+      console.log("Item was not deleted successfully.");
       throw new Error("Item was not deleted successfully.");
     }
 
+    console.log("Item successfully deleted, ID:", itemId);
     return res.send({
       message: "Item successfully deleted.",
       itemId,
     });
   } catch (err) {
-    // console.log("Error from deleteItem:", err);
+    console.log("Error from deleteItem:", err);
     return res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
   }
 };
