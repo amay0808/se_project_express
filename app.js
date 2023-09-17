@@ -4,6 +4,7 @@ const { PORT = 3001 } = process.env;
 const mongoose = require("mongoose");
 const cors = require("cors");
 const routes = require("./routes");
+const errorHandler = require("./middlewares/error-handler"); // Import the error handler
 
 const app = express();
 
@@ -29,6 +30,11 @@ mongoose
 // Routes
 console.log("Applying routes...");
 app.use(routes);
+
+// Centralized Error Handling Middleware
+// This should come after all routes
+console.log("Applying error-handling middleware...");
+app.use(errorHandler);
 
 // Server
 app.listen(PORT, () => {
