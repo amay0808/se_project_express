@@ -4,7 +4,9 @@ const { PORT = 3001 } = process.env;
 const mongoose = require("mongoose");
 const cors = require("cors");
 const routes = require("./routes");
-const errorHandler = require("./middlewares/error-handler"); // Import the error handler
+const errorHandler = require("./middlewares/error-handler");
+const { errors } = require("celebrate");
+const { requestLogger, errorLogger } = require("./middlewares/logger");
 
 const app = express();
 
@@ -27,17 +29,25 @@ mongoose
   .then(() => console.log("Connected to DB"))
   .catch((e) => console.log("DB error", e));
 
+// Enable request logger right before the routes
+app.use(requestLogger);
+
 // Routes
 console.log("Applying routes...");
 app.use(routes);
 
+// Enable the error logger right after the routes
+app.use(errorLogger);
+// Celebrate Error Handling Middleware
+console.log("Applying Celebrate error-handling middleware...");
+app.use(errors());
+
 // Centralized Error Handling Middleware
-// This should come after all routes
-console.log("Applying error-handling middleware...");
+console.log("Applying custom error-handling middleware...");
 app.use(errorHandler);
 
 // Server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`App listening at ${PORT}`);
   console.log("Server setup complete");
 });
