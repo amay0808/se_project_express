@@ -32,6 +32,13 @@ mongoose
 // Enable request logger right before the routes
 app.use(requestLogger);
 
+// Crash Test Route
+app.get("/crash-test", () => {
+  setTimeout(() => {
+    throw new Error("Server will crash now");
+  }, 0);
+});
+
 // Routes
 console.log("Applying routes...");
 app.use(routes);
