@@ -25,7 +25,7 @@ module.exports = (req, res, next) => {
   try {
     payload = jwt.verify(token, JWT_SECRET);
   } catch (e) {
-    // console.log("JWT verification failed:", e.message);
+    console.log("JWT verification failed:", e.message);
     return res.status(UNAUTHORIZED).send({ message: "Invalid token" });
   }
 

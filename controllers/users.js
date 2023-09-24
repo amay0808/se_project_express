@@ -108,6 +108,7 @@ const signinUser = async (req, res) => {
 };
 
 const getCurrentUser = async (req, res) => {
+  console.log("Getting current user");
   try {
     console.log("getCurrentUser: user id from request:", req.user._id); // Log user id from request
     const user = await User.findById(req.user._id);
