@@ -27,6 +27,8 @@ const createUser = async (req, res) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     console.log("User with given email already exists");
+    console.log("JWT_SECRET:", JWT_SECRET); // Added log statement
+    console.log("existingUser:", existingUser); // Added log statement
     return res.status(CONFLICT).send({ message: "Email already in use" });
   }
 
@@ -49,12 +51,7 @@ const createUser = async (req, res) => {
     const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
-    // Console log JWT_SECRET and existingUser
-    console.log("JWT_SECRET:", JWT_SECRET);
-    console.log("existingUser:", existingUser);
-
-    // Console log the generated JWT token
-    console.log("Token:", token);
+    console.log("Token:", token); // Added log statement
 
     // Send back user data and token
     return res.status(CREATED).send({ user: userResponse, token });
@@ -99,7 +96,7 @@ const signinUser = async (req, res) => {
         .status(UNAUTHORIZED)
         .send({ message: "Invalid email or password" });
     }
-
+    console.log(token); // Added log statement
     const token = jwt.sign({ _id: existingUser._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
