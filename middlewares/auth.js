@@ -23,6 +23,8 @@ module.exports = (req, res, next) => {
   let payload;
 
   try {
+    console.log("Token received:", token);
+    console.log("JWT_SECRET used:", JWT_SECRET);
     payload = jwt.verify(token, JWT_SECRET);
   } catch (e) {
     console.log("JWT verification failed:", e.message);
