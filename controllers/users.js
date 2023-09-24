@@ -109,12 +109,21 @@ const signinUser = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
+    console.log("getCurrentUser: user id from request:", req.user._id); // Log user id from request
     const user = await User.findById(req.user._id);
     if (!user) {
+      console.log("getCurrentUser: User not found for id:", req.user._id); // Log if user not found
       return res.status(NOT_FOUND).send({ message: "User not found" });
     }
+    console.log("getCurrentUser: Sending user response for id:", req.user._id); // Log before sending user response
     return res.send(user);
   } catch (err) {
+    console.log(
+      "getCurrentUser: Error occurred for id:",
+      req.user._id,
+      "Error:",
+      err,
+    ); // Log errors if any
     console.error(err);
     return res
       .status(INTERNAL_SERVER_ERROR)
