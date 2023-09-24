@@ -6,7 +6,9 @@ const cors = require("cors");
 const routes = require("./routes");
 const errorHandler = require("./middlewares/error-handler");
 const { errors } = require("celebrate");
-const { requestLogger, errorLogger } = require("./middlewares/logger");
+const { requestLogger } = require("./middlewares/logger"); // Only import requestLogger
+const winston = require("winston");
+const expressWinston = require("express-winston");
 
 const app = express();
 
@@ -44,7 +46,14 @@ console.log("Applying routes...");
 app.use(routes);
 
 // Enable the error logger right after the routes
-app.use(errorLogger);
+// Use expressWinston.errorLogger directly here
+app.use(
+  expressWinston.errorLogger({
+    transports: [new winston.transports.File({ filename: "error.log" })],
+    format: winston.format.json(),
+  }),
+);
+
 // Celebrate Error Handling Middleware
 console.log("Applying Celebrate error-handling middleware...");
 app.use(errors());
