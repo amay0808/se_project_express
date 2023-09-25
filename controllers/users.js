@@ -15,7 +15,12 @@ const {
 const createUser = async (req, res) => {
   console.log("createUser function called with request body:", req.body);
   console.log("Reached register endpoint");
+
   const { name, avatar, email, password } = req.body;
+  console.log("Name:", name); // Log the Name received in the request body
+  console.log("Avatar:", avatar); // Log the Avatar received in the request body
+  console.log("Email:", email); // Log the Email received in the request body
+  console.log("Password:", password); // Log the Password received in the request body
 
   if (!name || !email || !password) {
     return res
@@ -43,7 +48,7 @@ const createUser = async (req, res) => {
     console.log("Attempting to save user to database...");
     const savedUser = await newUser.save();
     console.log("User saved successfully, removing password from response...");
-
+œ
     const userResponse = savedUser.toObject();
     delete userResponse.password;
 
@@ -69,8 +74,10 @@ const createUser = async (req, res) => {
 };
 
 const signinUser = async (req, res) => {
+  console.log("signinUser called with request body:", req.body); // Log incoming request body
   const { email, password } = req.body;
-
+  console.log("Email:", email); // Log the Email received in the request body
+  console.log("Password:", password);
   if (!email || !password) {
     return res
       .status(UNAUTHORIZED)
@@ -96,11 +103,11 @@ const signinUser = async (req, res) => {
         .status(UNAUTHORIZED)
         .send({ message: "Invalid email or password" });
     }
-    console.log(token); // Added log statement
+
     const token = jwt.sign({ _id: existingUser._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
-
+    console.log("Generated Token:", token);
     return res.send({ token, message: "Signed in successfully" });
   } catch (err) {
     console.error("Error during signin:", err);
