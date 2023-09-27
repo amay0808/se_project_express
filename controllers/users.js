@@ -8,6 +8,8 @@ const BadRequestError = require("../errors/BadRequestError");
 const UnauthorizedError = require("../errors/UnauthorizedError");
 const NotFoundError = require("../errors/NotFoundError");
 const ConflictError = require("../errors/ConflictError");
+const InternalServerError = require("../errors/InternalServerError");
+const mongoose = require("mongoose");
 
 const createUser = async (req, res, next) => {
   try {
@@ -34,7 +36,11 @@ const createUser = async (req, res, next) => {
     });
     return res.status(201).send({ user: userResponse, token });
   } catch (err) {
-    return next(err);
+    if (err instanceof mongoose.Error.ValidationError) {
+      next(new BadRequestError("Validation Error: Invalid Data."));
+    } else {
+      next(new InternalServerError("Error from createUser"));
+    }
   }
 };
 
@@ -60,7 +66,11 @@ const signinUser = async (req, res, next) => {
     });
     return res.send({ token, message: "Signed in successfully" });
   } catch (err) {
-    return next(err);
+    if (err instanceof mongoose.Error.ValidationError) {
+      next(new BadRequestError("Validation Error: Invalid Data."));
+    } else {
+      next(new InternalServerError("Error from signinUser"));
+    }
   }
 };
 
@@ -74,7 +84,11 @@ const getCurrentUser = async (req, res, next) => {
 
     return res.send(user);
   } catch (err) {
-    return next(err);
+    if (err instanceof mongoose.Error.ValidationError) {
+      next(new BadRequestError("Validation Error: Invalid Data."));
+    } else {
+      next(new InternalServerError("Error from getCurrentUser"));
+    }
   }
 };
 
@@ -101,7 +115,11 @@ const updateCurrentUser = async (req, res, next) => {
 
     return res.send(user);
   } catch (err) {
-    return next(err);
+    if (err instanceof mongoose.Error.ValidationError) {
+      next(new BadRequestError("Validation Error: Invalid Data."));
+    } else {
+      next(new InternalServerError("Error from updateCurrentUser"));
+    }
   }
 };
 
