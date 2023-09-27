@@ -25,7 +25,7 @@ const validateClothingItem = celebrate({
 const validateNewUser = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30), // Changed username to name
-    avatarUrl: Joi.string().required().custom(validateURL).messages({
+    avatar: Joi.string().required().custom(validateURL).messages({
       "string.empty": 'The "avatarUrl" field must be filled in',
       "string.uri": 'The "avatarUrl" field must be a valid URL',
     }),
