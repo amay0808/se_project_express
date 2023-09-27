@@ -136,7 +136,7 @@ const deleteItem = async (req, res, next) => {
       return;
     }
 
-    if (item.owner.toString() !== req.user._id.toString()) {
+    if (item.owner.toString() !== req.user.id.toString()) {
       next(new ForbiddenError("You are not authorized to delete this item"));
       return;
     }

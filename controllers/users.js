@@ -48,7 +48,7 @@ const createUser = async (req, res) => {
     console.log("Attempting to save user to database...");
     const savedUser = await newUser.save();
     console.log("User saved successfully, removing password from response...");
-œ
+
     const userResponse = savedUser.toObject();
     delete userResponse.password;
 
