@@ -143,7 +143,7 @@ const deleteItem = async (req, res, next) => {
     }
 
     console.log("Item Owner:", item.owner.toString()); // Log the owner of the item
-    console.log("Request User ID:", req.user.id.toString()); // Log the user ID from the request
+    console.log("Request User ID:", req.user._id.toString()); // Log the user ID from the request
 
     if (item.owner.toString() !== req.user._id.toString()) {
       console.log("Unauthorized to delete item"); // Log if user is not authorized to delete the item
