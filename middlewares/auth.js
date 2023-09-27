@@ -1,22 +1,19 @@
+const UnauthorizedError = require("../errors/UnauthorizedError");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
-const { UNAUTHORIZED } = require("../utils/errors");
 
 module.exports = (req, res, next) => {
   console.log("Auth middleware is running");
 
   const { authorization } = req.headers;
   console.log("Authorization Header:", authorization);
+
   if (!authorization) {
-    // console.log("No authorization header found");
-    return res.status(UNAUTHORIZED).send({ message: "Authorization required" });
+    throw new UnauthorizedError("Authorization required");
   }
 
   if (!authorization.startsWith("Bearer ")) {
-    // console.log("Authorization header does not start with Bearer");
-    return res
-      .status(UNAUTHORIZED)
-      .send({ message: "Authorization format is invalid" });
+    throw new UnauthorizedError("Authorization format is invalid");
   }
 
   const token = authorization.replace("Bearer ", "");
@@ -29,7 +26,7 @@ module.exports = (req, res, next) => {
     console.log("Payload after JWT verification:", payload);
   } catch (e) {
     console.log("JWT verification failed:", e.message);
-    return res.status(UNAUTHORIZED).send({ message: "Invalid token" });
+    throw new UnauthorizedError("Invalid token");
   }
 
   req.user = payload;
