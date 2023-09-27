@@ -1,6 +1,16 @@
 const mongoose = require("mongoose");
 const ClothingItem = require("../models/clothingItem");
 
+// Importing mongoose and ClothingItem model
+const mongoose = require("mongoose");
+const ClothingItem = require("../models/clothingItem");
+
+// Importing custom error classes from their respective files
+const BadRequestError = require("../errors/BadRequestError");
+const NotFoundError = require("../errors/NotFoundError");
+const InternalServerError = require("../errors/InternalServerError");
+const ForbiddenError = require("../errors/ForbiddenError");
+
 const {
   BadRequestError,
   NotFoundError,
