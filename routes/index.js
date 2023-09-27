@@ -10,7 +10,7 @@ router.use("/users", userRoutes);
 router.use("/items", clothingItemRoutes);
 
 // This handles all other undefined routes
-const NotFoundError = require("../errors/NotFoundError");
+const NotFoundError = require("../errors/");
 
 router.use(() => {
   throw new NotFoundError("Route not found");
