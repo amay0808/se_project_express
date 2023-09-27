@@ -1,14 +1,16 @@
 require("dotenv").config();
+
 const express = require("express");
+const { errors } = require("celebrate");
+const winston = require("winston");
+const expressWinston = require("express-winston");
+
 const { PORT = 3001 } = process.env;
 const mongoose = require("mongoose");
 const cors = require("cors");
 const routes = require("./routes");
 const errorHandler = require("./middlewares/error-handler");
-const { errors } = require("celebrate");
-const { requestLogger } = require("./middlewares/logger"); // Only import requestLogger
-const winston = require("winston");
-const expressWinston = require("express-winston");
+const { requestLogger } = require("./middlewares/logger");
 
 const app = express();
 
@@ -46,7 +48,6 @@ console.log("Applying routes...");
 app.use(routes);
 
 // Enable the error logger right after the routes
-// Use expressWinston.errorLogger directly here
 app.use(
   expressWinston.errorLogger({
     transports: [new winston.transports.File({ filename: "error.log" })],

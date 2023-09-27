@@ -48,6 +48,17 @@ const validateId = celebrate({
     itemId: Joi.string().length(24).hex(),
   }),
 });
+const validateUpdateCurrentUser = celebrate({
+  body: Joi.object()
+    .keys({
+      name: Joi.string().min(2).max(30),
+      avatarUrl: Joi.string().custom(validateURL).messages({
+        "string.uri": 'The "avatarUrl" field must be a valid URL',
+      }),
+      email: Joi.string().email(),
+    })
+    .min(1), // At least one field should be provided
+});
 
 // Export the validation functions
 module.exports = {
@@ -55,4 +66,5 @@ module.exports = {
   validateNewUser,
   validateUserLogin,
   validateId,
+  validateUpdateCurrentUser, // Added new validation schema
 };

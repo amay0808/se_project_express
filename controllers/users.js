@@ -42,7 +42,7 @@ const createUser = async (req, res) => {
       name,
       avatar,
       email,
-      password: password,
+      password,
     });
 
     console.log("Attempting to save user to database...");
