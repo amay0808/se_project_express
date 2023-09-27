@@ -6,13 +6,9 @@ const {
 } = require("../middlewares/validation");
 
 // Signup route
-router.post("/signup", validateNewUser, (req, res) => {
-  createUser(req, res);
-});
+router.post("/signup", validateNewUser, createUser);
 
 // Signin route
-router.post("/signin", validateUserLogin, (req, res) => {
-  signinUser(req, res);
-});
+router.post("/signin", validateUserLogin, signinUser);
 
 module.exports = router;
