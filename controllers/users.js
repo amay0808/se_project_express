@@ -1,178 +1,107 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
 const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
-const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  INTERNAL_SERVER_ERROR,
-  CREATED,
-  UNAUTHORIZED,
-  CONFLICT,
-} = require("../utils/errors");
 
-const createUser = async (req, res) => {
-  console.log("createUser function called with request body:", req.body);
-  console.log("Reached register endpoint");
+// Importing Error Classes
+const BadRequestError = require("../errors/BadRequestError");
+const UnauthorizedError = require("../errors/UnauthorizedError");
+const NotFoundError = require("../errors/NotFoundError");
+const ConflictError = require("../errors/ConflictError");
 
-  const { name, avatar, email, password } = req.body;
-  console.log("Name:", name); // Log the Name received in the request body
-  console.log("Avatar:", avatar); // Log the Avatar received in the request body
-  console.log("Email:", email); // Log the Email received in the request body
-  console.log("Password:", password); // Log the Password received in the request body
-
-  if (!name || !email || !password) {
-    return res
-      .status(BAD_REQUEST)
-      .send({ message: "Name, email, and password are required." });
-  }
-
-  // Check if the email already exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    console.log("User with given email already exists");
-    console.log("JWT_SECRET:", JWT_SECRET); // Added log statement
-    console.log("existingUser:", existingUser); // Added log statement
-    return res.status(CONFLICT).send({ message: "Email already in use" });
-  }
-
+const createUser = async (req, res, next) => {
   try {
-    const newUser = new User({
-      name,
-      avatar,
-      email,
-      password,
-    });
+    const { name, avatar, email, password } = req.body;
 
-    console.log("Attempting to save user to database...");
+    if (!name || !email || !password) {
+      throw new BadRequestError("Name, email, and password are required.");
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      throw new ConflictError("Email already in use");
+    }
+
+    const newUser = new User({ name, avatar, email, password });
     const savedUser = await newUser.save();
-    console.log("User saved successfully, removing password from response...");
 
     const userResponse = savedUser.toObject();
     delete userResponse.password;
 
-    // Generate JWT token
     const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
-    console.log("Token:", token); // Added log statement
-
-    // Send back user data and token
-    return res.status(CREATED).send({ user: userResponse, token });
+    return res.status(201).send({ user: userResponse, token });
   } catch (err) {
-    console.error("Error occurred during user creation:", err);
-
-    if (err.name === "ValidationError") {
-      return res.status(BAD_REQUEST).send({ message: err.message });
-    }
-
-    return res.status(INTERNAL_SERVER_ERROR).send({
-      message: "Unexpected error during user creation",
-    });
+    next(err); // Pass the error to the error-handling middleware
   }
 };
 
-const signinUser = async (req, res) => {
-  console.log("signinUser called with request body:", req.body); // Log incoming request body
-  const { email, password } = req.body;
-  console.log("Email:", email); // Log the Email received in the request body
-  console.log("Password:", password);
-  if (!email || !password) {
-    return res
-      .status(UNAUTHORIZED)
-      .send({ message: "Email and password are required" });
-  }
-
+const signinUser = async (req, res, next) => {
   try {
-    const existingUser = await User.findOne({ email }).select("+password");
+    const { email, password } = req.body;
 
-    if (!existingUser) {
-      return res
-        .status(UNAUTHORIZED)
-        .send({ message: "Invalid email or password" });
+    if (!email || !password) {
+      throw new UnauthorizedError("Email and password are required");
     }
 
-    const isValidPassword = await bcrypt.compare(
-      password,
-      existingUser.password,
-    );
+    const existingUser = await User.findOne({ email }).select("+password");
 
-    if (!isValidPassword) {
-      return res
-        .status(UNAUTHORIZED)
-        .send({ message: "Invalid email or password" });
+    if (
+      !existingUser ||
+      !(await bcrypt.compare(password, existingUser.password))
+    ) {
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     const token = jwt.sign({ _id: existingUser._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
-    console.log("Generated Token:", token);
     return res.send({ token, message: "Signed in successfully" });
   } catch (err) {
-    console.error("Error during signin:", err);
-    return res.status(INTERNAL_SERVER_ERROR).send({
-      message: "Unexpected error during user sign in",
-    });
+    next(err); // Pass the error to the error-handling middleware
   }
 };
 
-const getCurrentUser = async (req, res) => {
-  console.log("Getting current user");
+const getCurrentUser = async (req, res, next) => {
   try {
-    console.log("getCurrentUser: user id from request:", req.user._id); // Log user id from request
     const user = await User.findById(req.user._id);
+
     if (!user) {
-      console.log("getCurrentUser: User not found for id:", req.user._id); // Log if user not found
-      return res.status(NOT_FOUND).send({ message: "User not found" });
+      throw new NotFoundError("User not found");
     }
-    console.log("getCurrentUser: Sending user response for id:", req.user._id); // Log before sending user response
+
     return res.send(user);
   } catch (err) {
-    console.log(
-      "getCurrentUser: Error occurred for id:",
-      req.user._id,
-      "Error:",
-      err,
-    ); // Log errors if any
-    console.error(err);
-    return res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "Error occurred while fetching current user" });
+    next(err); // Pass the error to the error-handling middleware
   }
 };
 
-const updateCurrentUser = async (req, res) => {
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ["name", "avatar"];
-
-  const isValidOperation = updates.every((update) =>
-    allowedUpdates.includes(update),
-  );
-
-  if (!isValidOperation) {
-    return res.status(BAD_REQUEST).send({ message: "Invalid updates" });
-  }
-
+const updateCurrentUser = async (req, res, next) => {
   try {
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ["name", "avatar"];
+    const isValidOperation = updates.every((update) =>
+      allowedUpdates.includes(update),
+    );
+
+    if (!isValidOperation) {
+      throw new BadRequestError("Invalid updates");
+    }
+
     const user = await User.findByIdAndUpdate(req.user._id, req.body, {
       new: true,
       runValidators: true,
     });
 
     if (!user) {
-      return res.status(NOT_FOUND).send({ message: "User not found" });
+      throw new NotFoundError("User not found");
     }
 
     return res.send(user);
   } catch (err) {
-    if (err.name === "ValidationError") {
-      return res.status(BAD_REQUEST).send({ message: err.message });
-    }
-    console.error(err);
-    return res.status(INTERNAL_SERVER_ERROR).send({
-      message: "Unexpected error during current user update",
-    });
+    next(err); // Pass the error to the error-handling middleware
   }
 };
 
