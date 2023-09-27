@@ -2,6 +2,11 @@
 
 WTWR (What to Wear?) is a powerful application designed to assist users in choosing their daily outfits based on weather conditions and personal style preferences. This repository hosts the back-end server and API of the WTWR application, providing a streamlined conduit for client-side requests and secure, efficient interaction with the application's database.
 
+## Domain Names
+
+- [www.wtwr.styledcomputing.com](http://www.wtwr.styledcomputing.com)
+- [wtwr.styledcomputing.com](http://wtwr.styledcomputing.com)
+
 ## Functionality
 
 - User authorization and authentication, facilitating a personalized experience.
