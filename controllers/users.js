@@ -34,7 +34,7 @@ const createUser = async (req, res, next) => {
     });
     return res.status(201).send({ user: userResponse, token });
   } catch (err) {
-    next(err); // Pass the error to the error-handling middleware
+    return next(err);
   }
 };
 
@@ -60,7 +60,7 @@ const signinUser = async (req, res, next) => {
     });
     return res.send({ token, message: "Signed in successfully" });
   } catch (err) {
-    next(err); // Pass the error to the error-handling middleware
+    return next(err);
   }
 };
 
@@ -74,7 +74,7 @@ const getCurrentUser = async (req, res, next) => {
 
     return res.send(user);
   } catch (err) {
-    next(err); // Pass the error to the error-handling middleware
+    return next(err);
   }
 };
 
@@ -101,7 +101,7 @@ const updateCurrentUser = async (req, res, next) => {
 
     return res.send(user);
   } catch (err) {
-    next(err); // Pass the error to the error-handling middleware
+    return next(err);
   }
 };
 

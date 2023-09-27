@@ -128,10 +128,6 @@ const deleteItem = async (req, res, next) => {
       return;
     }
 
-    // Add the log statements here
-    console.log("Item Owner:", item.owner.toString());
-    console.log("Request User ID:", req.user._id.toString());
-
     if (item.owner.toString() !== req.user._id.toString()) {
       next(new ForbiddenError("You are not authorized to delete this item"));
       return;
