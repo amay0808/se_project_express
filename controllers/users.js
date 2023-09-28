@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose"); // Moved up
 const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
 
@@ -9,7 +10,6 @@ const UnauthorizedError = require("../errors/UnauthorizedError");
 const NotFoundError = require("../errors/NotFoundError");
 const ConflictError = require("../errors/ConflictError");
 const InternalServerError = require("../errors/InternalServerError");
-const mongoose = require("mongoose");
 
 const createUser = async (req, res, next) => {
   try {
@@ -41,6 +41,7 @@ const createUser = async (req, res, next) => {
     } else {
       next(new InternalServerError("Error from createUser"));
     }
+    return null; // Added return statement
   }
 };
 
@@ -71,6 +72,7 @@ const signinUser = async (req, res, next) => {
     } else {
       next(new InternalServerError("Error from signinUser"));
     }
+    return null; // Added return statement
   }
 };
 
@@ -89,6 +91,7 @@ const getCurrentUser = async (req, res, next) => {
     } else {
       next(new InternalServerError("Error from getCurrentUser"));
     }
+    return null; // Added return statement
   }
 };
 
