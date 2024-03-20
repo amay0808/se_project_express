@@ -124,6 +124,7 @@ const updateCurrentUser = async (req, res, next) => {
       next(new InternalServerError("Error from updateCurrentUser"));
     }
   }
+  return null; // Added return statement
 };
 
 module.exports = {
